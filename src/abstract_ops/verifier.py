@@ -90,12 +90,15 @@ def verify_policy_ruleset(proposal: RuleSetProposal) -> PolicyAuditVerdict:
     violations: list[str] = []
     first_ce: dict[str, int | bool] | None = None
 
-    # 1. Проверка достижимости каждого правила (отлов dead/contradictory rules)
+    # 1. Reachability check (detect dead / contradictory rules)
+    reachable: list[tuple[PolicyRule, z3.BoolRef]] = []
     for rule, expr in compiled:
         s_reach = z3.Solver()
         s_reach.add(*domain, expr)
         if s_reach.check() != z3.sat:
             violations.append(f"Unreachable (dead) rule '{rule.rule_id}': contradictory conditions")
+        else:
+            reachable.append((rule, expr))
 
     # 2. Попарная проверка коллизий ALLOW vs DENY на одинаковом приоритете
     for i in range(len(compiled)):
@@ -129,6 +132,25 @@ def verify_policy_ruleset(proposal: RuleSetProposal) -> PolicyAuditVerdict:
                 violations.append(
                     f"Security invariant violated by '{rule.rule_id}': "
                     f"external user without MFA granted ALLOW on {ce}"
+                )
+
+    # 4. Dominance / Shadowing check: r1 (priority >= r2, same effect) subsumes r2
+    for i, (r1, e1) in enumerate(reachable):
+        for j, (r2, e2) in enumerate(reachable):
+            if i == j or r1.effect != r2.effect or r1.priority < r2.priority:
+                continue
+            if r1.priority == r2.priority and i > j:
+                continue
+            s_shadow = z3.Solver()
+            s_shadow.add(*domain, e2, z3.Not(e1))
+            if s_shadow.check() == z3.unsat:
+                s_witness = z3.Solver()
+                s_witness.add(*domain, e2)
+                if s_witness.check() == z3.sat and first_ce is None:
+                    first_ce = _extract_model(s_witness.model(), env)
+                violations.append(
+                    f"Shadowed redundant rule '{r2.rule_id}' (priority={r2.priority}) "
+                    f"is completely subsumed by '{r1.rule_id}' (priority={r1.priority})"
                 )
 
     if violations:

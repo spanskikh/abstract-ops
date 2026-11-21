@@ -160,3 +160,34 @@ async def test_policy_cegis_repairs_security_violation() -> None:
     )
     assert res.converged is True
     assert res.iterations == 2
+
+
+def test_detects_shadowed_redundant_rule() -> None:
+    proposal = RuleSetProposal(
+        policy_name="shadowing-test",
+        rules=[
+            PolicyRule(
+                rule_id="broad_internal_allow",
+                priority=20,
+                effect="ALLOW",
+                conditions=[
+                    RuleCondition(field="is_external", op="==", value=False),
+                    RuleCondition(field="clearance_level", op=">=", value=3),
+                ],
+            ),
+            PolicyRule(
+                rule_id="narrow_internal_allow",
+                priority=10,
+                effect="ALLOW",
+                conditions=[
+                    RuleCondition(field="is_external", op="==", value=False),
+                    RuleCondition(field="clearance_level", op=">=", value=4),
+                    RuleCondition(field="amount", op="<=", value=5000),
+                ],
+            ),
+        ],
+    )
+    verdict = verify_policy_ruleset(proposal)
+    assert verdict.status == "UNSAT"
+    assert any("Shadowed redundant rule 'narrow_internal_allow'" in v for v in verdict.violations)
+    assert verdict.counterexample is not None

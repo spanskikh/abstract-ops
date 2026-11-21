@@ -20,6 +20,7 @@ flowchart TD
 * **Dead Rules:** Unreachable rules containing internally contradictory predicates (`amount > 50000` AND `amount < 10000`).
 * **Policy Ambiguity:** Overlapping `ALLOW` and `DENY` activation regions at the same priority level, returning an exact counterexample.
 * **Security Invariant Breach:** Formal proof that `ALLOW` is unreachable whenever `is_external == True` and `mfa_verified == False`.
+* **Shadowed / Subsumed Rules (CR-002):** Formal proof (`UNSAT(e2 and not e1)`) detecting redundant rules completely covered by broader rules.
 
 ## Sample CEGIS Execution
 ```text

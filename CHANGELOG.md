@@ -2,6 +2,21 @@
 
 All notable changes and formal Change Requests (CRs) for `abstract-ops` are documented in this file.
 
+## [0.5.0] - 2026-11-22 — CR-010, CR-012 & CR-013: FastMCP `stdio` Contract Harness & Adversarial Policy Fuzzing Gate
+### Objective & Risk Mitigated
+- **Closed Residual Risk:** Proved that the Z3 policy auditor and CEGIS repair loop reject 100% of adversarial MFA bypasses, priority collisions, boundary off-by-one overlaps, and shadowed rules within bounded CPU iterations (`<= 3`), while enforcing strict MCP `stdio` JSON-RPC contracts.
+- **Traceability:** Branches `feat/cr-010-mcp-stdio-contracts` and `feat/cr-012-adversarial-cegis-gate` (`cae824d`) merged via `--no-ff`; releases `v0.5.0`.
+
+### Added
+- `tests/test_mcp_contracts.py`: Real `mcp.client.stdio` discovery, JSON schema checks, `SAT`/`UNSAT` Z3 policy audit verification, and malformed payload rejection for `audit_policy_ruleset` and `synthesize_verified_policy`.
+- `src/abstract_ops/adversarial.py`, `src/abstract_ops/store.py` & `tests/test_adversarial_cegis.py`: Deterministic adversarial corpus generator (`60` specs across 4 attack categories), `Hypothesis` property fuzzing (`120` randomized MFA-bypass and boundary-collision specs), CEGIS convergence benchmark (`cegis_benchmarks` table in `DuckDB`), and full audit trail (`120` Z3 verdicts persisted in `policy_audits`).
+- `DEVPROCESS.md` & `docs/DEFECTS_AND_CAPA.md` (`CAPA-002`): Codified normative SDLC and English-only Git governance.
+
+### Verification Evidence
+- `./scripts/run_logged.sh cr012_ruff` (`logs/20261122-160233_cr012_ruff.log`): `All checks passed!`
+- `./scripts/run_logged.sh cr012_mypy` (`logs/20261122-160233_cr012_mypy.log`): `Success: no issues found in 12 source files`
+- `./scripts/run_logged.sh cr012_pytest` (`logs/20261122-160234_cr012_pytest.log`): `24 passed, 1 deselected` (`0` false `SAT` across `60` adversarial + `120` Hypothesis specs; CEGIS convergence in `2` iterations).
+
 ## [0.4.0] - 2026-11-22 — CR-009: Dev-Process Auditability, Execution Logging & Release Retrospectives
 ### Objective & Risk Mitigated
 - **Closed Residual Risk:** Eliminated loss of iterative engineering history, unlogged local execution runs, and missing post-release retrospectives across `abstract-ops` by introducing deterministic `.stdout`/`.stderr`/`.log` capture, versioned `docs/dev-log/` artifacts, and mandatory release retrospectives enforced by automated mutation tests.

@@ -9,7 +9,7 @@ from abstract_ops.contracts import PolicyAuditVerdict
 
 
 class PolicyAuditStore:
-    """Журнал формальной верификации политик и CEGIS-метрик в DuckDB."""
+    """Formal policy verification and CEGIS convergence audit log in DuckDB."""
 
     def __init__(self, db_path: str | Path = ":memory:") -> None:
         self._conn = duckdb.connect(str(db_path))
@@ -23,6 +23,20 @@ class PolicyAuditStore:
                 rule_count INTEGER NOT NULL,
                 violations_json VARCHAR NOT NULL,
                 counterexample_json VARCHAR
+            )
+            """
+        )
+        self._conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS cegis_benchmarks (
+                ts TIMESTAMP DEFAULT current_timestamp,
+                suite_name VARCHAR NOT NULL,
+                total_specs INTEGER NOT NULL,
+                false_sat_count INTEGER NOT NULL,
+                converged_count INTEGER NOT NULL,
+                max_iterations INTEGER NOT NULL,
+                mean_iterations DOUBLE NOT NULL,
+                passed_gate BOOLEAN NOT NULL
             )
             """
         )
@@ -45,6 +59,48 @@ class PolicyAuditStore:
                 else None,
             ],
         )
+
+    def record_cegis_benchmark(
+        self,
+        suite_name: str,
+        total_specs: int,
+        false_sat_count: int,
+        converged_count: int,
+        max_iterations: int,
+        mean_iterations: float,
+        passed_gate: bool,
+    ) -> None:
+        self._conn.execute(
+            """
+            INSERT INTO cegis_benchmarks (
+                suite_name,
+                total_specs,
+                false_sat_count,
+                converged_count,
+                max_iterations,
+                mean_iterations,
+                passed_gate
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+            """,
+            [
+                suite_name,
+                total_specs,
+                false_sat_count,
+                converged_count,
+                max_iterations,
+                mean_iterations,
+                passed_gate,
+            ],
+        )
+
+    def count_audits(self) -> int:
+        row = self._conn.execute("SELECT COUNT(*) FROM policy_audits").fetchone()
+        return int(row[0]) if row else 0
+
+    def count_cegis_benchmarks(self) -> int:
+        row = self._conn.execute("SELECT COUNT(*) FROM cegis_benchmarks").fetchone()
+        return int(row[0]) if row else 0
 
     def close(self) -> None:
         self._conn.close()

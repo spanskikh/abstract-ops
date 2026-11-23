@@ -41,3 +41,11 @@ docker compose build auditor
 docker compose run --rm auditor sh -c "ruff check src tests && mypy src tests && pytest -v"
 docker compose run --rm auditor python -m abstract_ops.cegis
 ```
+
+## Cluster Governance & Release Process (Single Source of Truth)
+
+Cluster-wide engineering standards, release roadmaps, and CAPA records are maintained centrally in [`spanskikh/spanskikh`](https://github.com/spanskikh/spanskikh) (`CAPA-004` / `CR-020`):
+- [Engineering & AI-Assisted Development Process (`DEVPROCESS.md`)](https://github.com/spanskikh/spanskikh/blob/main/DEVPROCESS.md)
+- [Cluster Release Roadmap (`RELEASES.md`)](https://github.com/spanskikh/spanskikh/blob/main/RELEASES.md)
+- [Defects & CAPA Registry (`docs/DEFECTS_AND_CAPA.md`)](https://github.com/spanskikh/spanskikh/blob/main/docs/DEFECTS_AND_CAPA.md)
+- [Release Retrospectives & Refinements (`docs/releases/`)](https://github.com/spanskikh/spanskikh/tree/main/docs/releases)
